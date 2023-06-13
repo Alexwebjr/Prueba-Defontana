@@ -49,7 +49,15 @@ ORDER BY MargenGanancia DESC;
 
 6. ¿Cómo obtendrías cuál es el producto que más se vende en cada local?
 
-SELECT v.ID_Local, vd.ID_Producto, MAX(vd.Cantidad) AS MaxCantidad
-FROM Venta v
-JOIN VentaDetalle vd ON v.ID_Venta = vd.ID_Venta
-GROUP BY v.ID_Local, vd.ID_Producto;
+SELECT ID_Local, ID_Producto, Nombre, CantidadVentas
+FROM (
+    SELECT V.ID_Local, VD.ID_Producto, P.Nombre, SUM(VD.Cantidad) AS CantidadVentas,
+           ROW_NUMBER() OVER (PARTITION BY V.ID_Local ORDER BY COUNT(*) DESC) AS RN
+    FROM VentaDetalle VD
+	JOIN Venta V ON VD.ID_Venta = V.ID_Venta
+    JOIN Producto P ON VD.ID_Producto = P.ID_Producto
+	WHERE v.Fecha >= DATEADD(DAY, -30, GETDATE())
+    GROUP BY V.ID_Local, VD.ID_Producto, P.Nombre
+	--ORDER BY CantidadVentas DESC
+) AS T
+WHERE RN = 1;
