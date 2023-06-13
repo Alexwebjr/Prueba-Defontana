@@ -13,16 +13,17 @@ namespace Prueba_Defontana
         {
             //Calling DbContext
             var db = new PruebaEntities();
-
-            //1. Consultar ventas de los últimos 30 días
-            int from = -30; //dias a restar
-            var fechaDesde = (DateTime.Now.Date).AddDays(from).Date;
-            //var ventas = db.VentaDetalle.ToList();
-            var ventas = db.VentaDetalle
+            var datos = db.VentaDetalle
                 .Include(v => v.Venta)
                 .Include(v => v.Venta.Local)
                 .Include(v => v.Producto)
                 .Include(v => v.Producto.Marca)
+                .ToList();
+
+            //1. Consultar ventas de los últimos 30 días
+            int from = -30; //dias a restar
+            var fechaDesde = (DateTime.Now.Date).AddDays(from).Date;
+            var ventas = datos
                 .Where(v => v.Venta.Fecha >= fechaDesde).ToList()
                 .OrderByDescending(v => v.Venta.Fecha)
                 .ToList();
@@ -50,6 +51,7 @@ namespace Prueba_Defontana
 
             //2.2 El día y hora en que se realizó la venta con el monto más alto (y cuál es aquel monto).
             var ventaMaxima = ventas.OrderByDescending(x => x.Venta.Total).FirstOrDefault();
+            Console.WriteLine();
             Console.WriteLine("2- Venta monto más alto: Fecha: " + ventaMaxima.Venta.Fecha + " | Total:" + ventaMaxima.Venta.Total);
 
 
@@ -77,23 +79,22 @@ namespace Prueba_Defontana
                 .FirstOrDefault();
 
             Console.WriteLine();
-            Console.WriteLine("4- Local con mayor monto de ventas: " + local.NombreLocal + "|" + local.MontoTotal );
-            
+            Console.WriteLine("4- Local con mayor monto de ventas: " + local.NombreLocal + " | " + local.MontoTotal);
+
             //2.5 ¿Cuál es la marca con mayor margen de ganancias?
             var marcasConMargenGanancias = ventas
-                .GroupBy(vd => vd.Producto.Marca)
+                .GroupBy(vd => new { vd.Producto.ID_Marca, vd.Producto.Marca.Nombre })
                 .Select(g => new
                 {
-                    Marca = g.Key,
+                    ID_Marca = g.Key.ID_Marca,
+                    Marca = g.Key.Nombre,
                     MargenGanancia = g.Sum(vd => (vd.Precio_Unitario - vd.Producto.Costo_Unitario) * vd.Cantidad)
                                     / g.Sum(vd => vd.Producto.Costo_Unitario * vd.Cantidad)
                 })
                 .OrderByDescending(m => m.MargenGanancia).FirstOrDefault();
 
             Console.WriteLine();
-            Console.WriteLine("5- Marca con mayor margen de ganacias: ");
-            Console.WriteLine("Marca: " + marcasConMargenGanancias.Marca);
-            Console.WriteLine("Margen de Ganacia: " + marcasConMargenGanancias.MargenGanancia);
+            Console.WriteLine("5- Marca con mayor margen de ganacias: Marca: " + marcasConMargenGanancias.Marca + " | Margen de Ganacia: " + marcasConMargenGanancias.MargenGanancia);
 
             //2.6 ¿Cómo obtendrías cuál es el producto que más se vende en cada local?
             var productosMasVendidosPorLocal = (from vd in ventas
@@ -112,38 +113,9 @@ namespace Prueba_Defontana
             {
                 Console.WriteLine("Local: " + productoMasVendido.ID_Local + " | Producto: " + productoMasVendido.Producto + " | Cantidad Vendida: " + productoMasVendido.CantidadVentas);
             }
-            /* var productosMasVendidosPorLocal = ventas
-         .GroupBy(vd => new { vd.Venta.ID_Local, vd.ID_Producto })
-         .Select(g => new
-         {
-             LocalID = g.Key.ID_Local,
-             ProductoID = g.Key.ID_Producto,
-             CantidadTotal = g.Sum(vd => vd.Cantidad)
-         })
-         .GroupBy(g => g.LocalID)
-         .Select(g => g.OrderByDescending(p => p.CantidadTotal).FirstOrDefault())
-         .Join(db.Producto,
-             ventaDetalle => ventaDetalle.ProductoID,
-             producto => producto.ID_Producto,
-             (ventaDetalle, producto) => new
-             {
-                 LocalID = ventaDetalle.LocalID,
-                 LocalNombre = db.Local.FirstOrDefault(l => l.ID_Local == ventaDetalle.LocalID)?.Nombre,
-                 ProductoID = ventaDetalle.ProductoID,
-                 ProductoNombre = producto.Nombre,
-                 CantidadTotal = ventaDetalle.CantidadTotal
-             });
 
-             foreach (var productoMasVendido in productosMasVendidosPorLocal)
-             {
-                 Console.WriteLine("Local: " + productoMasVendido.LocalNombre);
-                 Console.WriteLine("Producto más vendido:");
-                 Console.WriteLine("ID: " + productoMasVendido.ProductoID);
-                 Console.WriteLine("Nombre: " + productoMasVendido.ProductoNombre);
-                 Console.WriteLine("Cantidad Total: " + productoMasVendido.CantidadTotal);
-                 Console.WriteLine();
-             }
-            */
+            Console.WriteLine();
+            Console.WriteLine("Presione alguna tecla para finalizar!");
             Console.ReadKey();
 
         }
